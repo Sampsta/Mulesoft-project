@@ -1,0 +1,107 @@
+#%RAML 1.0
+title: QA-Cinemas-api
+version: 1.0
+mediaType: application/json
+
+types:
+  film: !include types/film.raml
+  user: !include types/user.raml
+  booking: !include types/booking.raml
+traits: 
+  basicMessage: !include traits/responseMessage.raml
+  updateMessage: !include traits/updateMessage.raml
+  deleteMessage: !include traits/deleteMessgae.raml
+/QAcinemasOverview:
+  /displayFilms:
+    get:
+      responses: 
+        200:
+          body: 
+            application/json:
+              type: film[]
+              example: !include Example_data/JsonArrayInput.json
+  ##/{id}:
+   ## get:
+   ## put:
+   ## delete:
+      
+  /addFilm:
+    post:
+       body: 
+        application/json:
+          type: film
+          example: !include Example_data/SingleFilm.json
+       is: [basicMessage]
+  /updateFilm:
+    put:
+      body: 
+        application/json:
+          type: film
+          example: !include Example_data/SingleFilm.json
+      is: [updateMessage]
+  /removeFilm:
+    delete:
+      body: 
+        application/json:
+          type: film
+          example: !include Example_data/SingleFilm.json
+      is: [deleteMessage]
+/userAccount:
+  get:
+    body: 
+      application/json:
+        type: user[]
+        example: !include Example_data/allUsers.json
+  /addUser:
+    post:
+      body:
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+      is: [basicMessage]
+    get:
+      body: 
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+  /removeUser:
+    delete:
+      body: 
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+      is: [deleteMessage]
+  /updateUser:
+    put:
+      body: 
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+      is: [updateMessage]
+/booking:
+  get:
+    body: 
+      application/json:
+        type: booking[]
+        example: !include Example_data/allBookings.json
+  /addBooking:
+    post:
+      body: 
+        application/json:
+          type: booking
+          example: !include Example_data/simpleBooking.json
+      is: [basicMessage]
+  /updateBooking:
+    put:
+      body: 
+        application/json:
+          type: booking
+          example: !include Example_data/simpleBooking.json
+      is: [updateMessage]
+  /deleteBooking:
+    delete:
+      body: 
+        application/json:
+          type: booking
+          example: !include Example_data/simpleBooking.json
+      is: [deleteMessage]

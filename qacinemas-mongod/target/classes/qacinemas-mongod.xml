@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:smtps="http://www.mulesoft.org/schema/mule/smtps" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/ftp http://www.mulesoft.org/schema/mule/ee/ftp/current/mule-ftp-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/smtps/current/mule-smtps.xsd">
+    <http:listener-config name="api-httpListenerConfig" host="0.0.0.0" port="8081" basePath="/cinema" doc:name="HTTP Listener Configuration" />
+    <apikit:config name="api-config" raml="api.raml" consoleEnabled="false" doc:name="Router" keepRamlBaseUri="false" />
+    <file:connector name="File" writeToDirectory="src/main/resources/output" autoDelete="false" streaming="true" validateConnections="true" doc:name="File"/>
+    <smtp:gmail-connector name="Gmail" ccAddresses="sampsta1505@gmail.com" contentType="application/json" fromAddress="daniel.sampson@qa.com" subject="confirmation" validateConnections="true" doc:name="Gmail"/>
+    <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="root" database="qacinemas-sql" doc:name="MySQL Configuration"/>
+    <mongo:config name="Mongo_DB" username="root" database="qacinemas" doc:name="Mongo DB"/>
+    <mongo:config name="Mongo_DBOnline" username="user" password="Pa$$w0rd" database="qacinemas-mongod" host="ec2-35-176-252-176.eu-west-2.compute.amazonaws.com" doc:name="Mongo DB"/>
+    <flow name="api-main">
+        <http:listener config-ref="api-httpListenerConfig" path="/api/*" doc:name="HTTP" />
+        <apikit:router config-ref="api-config" doc:name="APIkit Router" />
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="api-console">
+        <http:listener config-ref="api-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="api-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="getConfirmationOfBooking">
+        <http:listener config-ref="api-httpListenerConfig" path="/confirm" allowedMethods="GET" doc:name="HTTP"/>
+        <mongo:find-one-object-using-query-map config-ref="Mongo_DBOnline"  doc:name="Mongo DB" collection="bookings">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="bookingId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:find-one-object-using-query-map>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <smtp:outbound-endpoint host="smtp.gmail.com" user="sampsta1505@%40gmail.com" password="Anime1505" connector-ref="Gmail" to="sampsta1505@gmail.com" from="sampsta1505@gmail.com" subject="confirmation-test" responseTimeout="10000" doc:name="SMTP"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/QAcinemasOverview/updateFilm:api-config">
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:update-objects-by-function-using-map config-ref="Mongo_DBOnline" collection="films" function="$set" multi="false" upsert="true" doc:name="Mongo DB">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="movieId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+            <mongo:element-attributes>
+            	<mongo:element-attribute key="movieId">#[message.payload.movieId]</mongo:element-attribute>
+            	<mongo:element-attribute key="movieTitle">#[message.payload.movieTitle]</mongo:element-attribute>
+            	<mongo:element-attribute key="yearReleased">#[message.payload.yearReleased]</mongo:element-attribute>
+            	<mongo:element-attribute key="avgRating">#[message.payload.avgRating]</mongo:element-attribute>
+            	<mongo:element-attribute key="duration">#[message.payload.duration]</mongo:element-attribute>
+            	<mongo:element-attribute key="genre">#[message.payload.genre]</mongo:element-attribute>
+            </mongo:element-attributes>
+        </mongo:update-objects-by-function-using-map>
+
+        <set-payload value="{&quot;message&quot;:&quot;movie updated&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/QAcinemasOverview/removeFilm:api-config">
+        <mongo:remove-objects-using-query-map config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB">
+       	 <mongo:query-attributes>
+            	<mongo:query-attribute key="movieId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:remove-objects-using-query-map>
+
+        <set-payload value="{&quot;message&quot;:&quot;film removed&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/QAcinemasOverview/removeUser:api-config">
+        <mongo:remove-objects-using-query-map config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB">
+       		<mongo:query-attributes>
+            	<mongo:query-attribute key="userId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:remove-objects-using-query-map>
+        <set-payload value="{&quot;message&quot;:&quot;user removed&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/QAcinemasOverview:api-config">
+        <mongo:find-objects config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/QAcinemasOverview/addFilm:api-config">
+        <logger message="#[message.payload]" level="INFO" doc:name="Logger"/>
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:insert-object config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
+
+        <set-payload value="{&quot;message&quot;:&quot;film sucesfully added&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/QAcinemasOverview/addUser:api-config">
+        <logger message="#[message.payload]" level="INFO" doc:name="Logger"/>
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:insert-object config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB"/>
+
+        <set-payload value="{&quot;message&quot;:&quot;user added&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/booking/updateBooking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/updatebooking" allowedMethods="PUT" doc:name="HTTP"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:update-objects-by-function-using-map config-ref="Mongo_DBOnline" collection="bookings"  doc:name="Mongo DB" function="$set" multi="false" upsert="true">
+			<mongo:query-attributes>
+            	<mongo:query-attribute key="bookingId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+            <mongo:element-attributes>
+            	<mongo:element-attribute key="bookingId">#[message.payload.bookingId]</mongo:element-attribute>
+            	<mongo:element-attribute key="userId">#[message.payload.userId]</mongo:element-attribute>
+            	<mongo:element-attribute key="movieId">#[message.payload.movieId]</mongo:element-attribute>
+            	<mongo:element-attribute key="movieTitle">#[message.payload.movieTitle]</mongo:element-attribute>
+            	<mongo:element-attribute key="noOfSeats">#[message.payload.noOfSeats]</mongo:element-attribute>
+            	<mongo:element-attribute key="screen">#[message.payload.screen]</mongo:element-attribute>
+            	<mongo:element-attribute key="timeBooked">#[message.payload.timeBooked]</mongo:element-attribute>
+            	<mongo:element-attribute key="date">#[message.payload.date]</mongo:element-attribute>
+            </mongo:element-attributes>
+        </mongo:update-objects-by-function-using-map>
+
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/QAcinemasOverview/updateFilm:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/updatefilm" allowedMethods="PUT" doc:name="HTTP"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:update-objects-by-function-using-map config-ref="Mongo_DBOnline" collection="films" function="$set" doc:name="Mongo DB">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="movieId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+            <mongo:element-attributes>
+            	<mongo:element-attribute key="movieId">#[message.payload.movieId]</mongo:element-attribute>
+            	<mongo:element-attribute key="movieTitle">#[message.payload.movieTitle]</mongo:element-attribute>
+            	<mongo:element-attribute key="yearReleased">#[message.payload.yearReleased]</mongo:element-attribute>
+            	<mongo:element-attribute key="avgRating">#[message.payload.avgRating]</mongo:element-attribute>
+            	<mongo:element-attribute key="duration">#[message.payload.duration]</mongo:element-attribute>
+            	<mongo:element-attribute key="genre">#[message.payload.genre]</mongo:element-attribute>
+            </mongo:element-attributes>
+        </mongo:update-objects-by-function-using-map>
+
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/userAccount/updateUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/updateuser" allowedMethods="PUT" doc:name="HTTP"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:dbobject-to-json doc:name="Mongo DB"/>
+        <mongo:update-objects-by-function-using-map config-ref="Mongo_DBOnline" collection="users" function="$set" doc:name="Mongo DB">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="userId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+            <mongo:element-attributes>
+            	<mongo:element-attribute key="userId">#[message.payload.userId]</mongo:element-attribute>
+            	<mongo:element-attribute key="username">#[message.payload.username]</mongo:element-attribute>
+            	<mongo:element-attribute key="password">#[message.payload.password]</mongo:element-attribute>
+            	<mongo:element-attribute key="name">#[message.payload.name]</mongo:element-attribute>
+            	<mongo:element-attribute key="age">#[message.payload.age]</mongo:element-attribute>
+            	<mongo:element-attribute key="occupation">#[message.payload.occupation]</mongo:element-attribute>
+            </mongo:element-attributes>
+        </mongo:update-objects-by-function-using-map>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/booking/deleteBooking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/removebooking" allowedMethods="DELETE" doc:name="HTTP"/>
+        <mongo:remove-objects-using-query-map config-ref="Mongo_DBOnline" collection="bookings" doc:name="Mongo DB">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="bookingId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:remove-objects-using-query-map>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/QAcinemasOverview/removeFilm:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/removefilm" allowedMethods="DELETE" doc:name="HTTP"/>
+        <mongo:remove-objects-using-query-map config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="movieId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:remove-objects-using-query-map>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/userAccount/removeUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/removeuser" allowedMethods="DELETE" doc:name="HTTP"/>
+        <mongo:remove-objects-using-query-map config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="userId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:remove-objects-using-query-map>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/userAccount/addUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/singleaccount" allowedMethods="GET" doc:name="HTTP"/>
+        <mongo:find-one-object-using-query-map config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB">
+        	<mongo:query-attributes>
+            	<mongo:query-attribute key="userId">#[message.inboundProperties.'http.query.params'.id]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:find-one-object-using-query-map>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/booking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/displaybookings" allowedMethods="GET" doc:name="HTTP"/>
+        <mongo:find-objects config-ref="Mongo_DBOnline" collection="bookings" doc:name="Mongo DB">
+        </mongo:find-objects>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/QAcinemasOverview/displayFilms:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/displayfilms" allowedMethods="GET" doc:name="HTTP"/>
+        <mongo:find-objects config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
+
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/userAccount:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/displayusers" allowedMethods="GET" doc:name="HTTP"/>
+        <mongo:find-objects config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB"/>
+
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/booking/addBooking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/addBooking" allowedMethods="POST" doc:name="HTTP"/>
+        <logger message="#[message.payload]" level="INFO" doc:name="Logger"/>
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:insert-object config-ref="Mongo_DBOnline" collection="bookings" doc:name="Mongo DB"/>
+
+        <set-payload value="&quot;added booking successfully&quot;" doc:name="Set Payload"/>
+
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/QAcinemasOverview/addFilm:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/addFilm" allowedMethods="POST" doc:name="HTTP"/>
+        <logger level="INFO" doc:name="Logger" message="#[payload]"/>
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:insert-object config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
+
+        <set-payload value="&quot;added film successfully&quot;" doc:name="Set Payload"/>
+
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/userAccount/addUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/addUser" allowedMethods="POST" doc:name="HTTP"/>
+        <logger level="INFO" doc:name="Logger" message="#[payload]"/>
+        <mongo:json-to-dbobject doc:name="Mongo DB"/>
+        <mongo:insert-object config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB"/>
+
+        <set-payload value="&quot;added user successfully&quot;" doc:name="Set Payload"/>
+
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <apikit:mapping-exception-strategy name="api-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

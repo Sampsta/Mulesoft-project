@@ -1,0 +1,10 @@
+{
+	"bookingId": 7,
+	"userId": 2,
+	"movieId": 1,
+	"movieTitle": "Wonder Woman",
+	"noOfSeats": 3,
+	"screen": 1,
+	"timeBooked": "11:00",
+	"date": "22-06-2017"
+}

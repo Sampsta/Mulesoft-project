@@ -1,0 +1,11 @@
+%dw 1.0
+%output application/java
+---
+[{
+	age: 1,
+	name: "????",
+	occupation: "????",
+	password: "????",
+	userId: 1,
+	username: "????"
+}]

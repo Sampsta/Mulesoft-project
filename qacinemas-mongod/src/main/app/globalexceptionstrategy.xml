@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <choice-exception-strategy name="globalexceptionstrategy">
+        <catch-exception-strategy doc:name="Catch Exception Strategy" when="#[exception.causedBy(java.lang.RuntimeException)]">
+            <set-payload value="#['run time exception caught, bad syntax on post']" doc:name="catchAll"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#['something went wrong, try looking at the syntax of the data entry']" doc:name="generic"/>
+        </catch-exception-strategy>
+    </choice-exception-strategy>
+</mule>

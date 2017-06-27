@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/ftp http://www.mulesoft.org/schema/mule/ee/ftp/current/mule-ftp-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <http:listener-config name="api-httpListenerConfig" host="0.0.0.0" port="8081" basePath="/cinema" doc:name="HTTP Listener Configuration" />
+    <apikit:config name="api-config" raml="api.raml" consoleEnabled="false" doc:name="Router" keepRamlBaseUri="false" />
+    <file:connector name="File" writeToDirectory="src/main/resources/output" autoDelete="false" streaming="true" validateConnections="true" doc:name="File"/>
+    <smtp:gmail-connector name="Gmail" ccAddresses="sampsta1505@gmail.com" contentType="application/json" fromAddress="daniel.sampson@qa.com" subject="confirmation" validateConnections="true" doc:name="Gmail"/>
+    <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="root" database="qacinemas-sql" doc:name="MySQL Configuration"/>
+    <db:mysql-config name="sqlOnline" host="muledev.ctemptlenqx0.eu-west-2.rds.amazonaws.com" port="3306" user="user" password="Pa$$w0rd" database="qacinemas-sql" doc:name="MySQL Configuration"/>
+    <flow name="api-main">
+        <http:listener config-ref="api-httpListenerConfig" path="/api/*" doc:name="HTTP" />
+        <apikit:router config-ref="api-config" doc:name="APIkit Router" />
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="api-console">
+        <http:listener config-ref="api-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="api-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="getConfirmationOfBooking">
+        <http:listener config-ref="api-httpListenerConfig" path="/confirm" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from bookings where bookingId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map_3.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	bookingId: $.bookingId,
+	userId: $.userId,
+	movieId: $.movieId,
+	film: $.movieTitle,
+	seats: $.noOfSeats,
+	screen: $.screen,
+	time: $.timeBooked,
+	date: $.date
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <smtp:outbound-endpoint host="smtp.gmail.com" user="sampsta1505@%40gmail.com" password="Anime1505" connector-ref="Gmail" to="sampsta1505@gmail.com" from="sampsta1505@gmail.com" subject="confirmation-test" responseTimeout="10000" doc:name="SMTP"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/QAcinemasOverview/updateFilm:api-config">
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_11.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	movieId: payload.movieId,
+	movieTitle: payload.movieTitle,
+	yearReleased: payload.yearReleased,
+	avgRating: payload.avgRating,
+	duration: payload.duration,
+	genre: payload.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <db:update config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[UPDATE films SET movieId=#[payload.movieId], movieTitle=#[payload.movieTitle], yearReleased=#[payload.yearReleased], avgRating=#[payload.avgRating], duration=#[payload.duration], genre=#[payload.genre] where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:update>
+
+        <set-payload value="{&quot;message&quot;:&quot;movie updated&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/QAcinemasOverview/removeFilm:api-config">
+        <db:delete config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[delete from users where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:delete>
+        <set-payload value="{&quot;message&quot;:&quot;film removed&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/QAcinemasOverview/removeUser:api-config">
+        <db:delete config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[delete from users where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:delete>
+        <set-payload value="{&quot;message&quot;:&quot;user removed&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/QAcinemasOverview:api-config">
+        <db:select config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from films]]></db:parameterized-query>
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_2.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	id: $.movieId,
+	film: $.movieTitle,
+	year: $.yearReleased,
+	rating: $.avgRating,
+	duration: $.duration,
+	genre: $.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/QAcinemasOverview/addFilm:api-config">
+        <logger message="#[message.payload]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_7.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	movieId: payload.movieId,
+	movieTitle: payload.movieTitle,
+	yearReleased: payload.yearReleased,
+	avgRating: payload.avgRating,
+	duration: payload.duration,
+	genre: payload.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <db:insert config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO films (movieId, movieTitle, yearReleased, avgRating, duration, genre) 
+VALUES (#[payload.movieId], #[payload.movieTitle], #[payload.yearReleased], #[payload.avgRating], #[payload.duration], #[payload.genre]);]]></db:parameterized-query>
+        </db:insert>
+        <set-payload value="{&quot;message&quot;:&quot;film sucesfully added&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/QAcinemasOverview/addUser:api-config">
+        <logger message="#[message.payload]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_6.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	userId: payload.userId,
+	username: payload.username,
+	password: payload.password,
+	name: payload.name,
+	age: payload.age,
+	occupation: payload.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <db:insert config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO users (userId, username, age, name, password, occupation) 
+VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name], #[payload.password], #[payload.occupation]);]]></db:parameterized-query>
+        </db:insert>
+        <set-payload value="{&quot;message&quot;:&quot;user added&quot;}" doc:name="Set Payload" />
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/booking/updateBooking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/updatebooking" allowedMethods="PUT" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_10.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	bookingId: payload.bookingId,
+	userId: payload.userId,
+	movieId: payload.movieId,
+	movieTitle: payload.movieTitle,
+	noOfSeats: payload.noOfSeats,
+	screen: payload.screen,
+	timeBooked: payload.timeBooked,
+	date: payload.date
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <db:update config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[UPDATE bookings SET bookingId=#[payload.bookingId], userId=#[payload.userId], movieId=#[payload.movieId], movieTitle=#[payload.movieTitle], noOfSeats=#[payload.noOfSeats], screen=#[payload.screen], timeBooked=#[payload.timeBooked], date=#[payload.date] where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:update>
+
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/QAcinemasOverview/updateFilm:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/updatefilm" allowedMethods="PUT" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_9.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	movieId: payload.movieId,
+	movieTitle: payload.movieTitle,
+	yearReleased: payload.yearReleased,
+	avgRating: payload.avgRating,
+	duration: payload.duration,
+	genre: payload.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <db:update config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[UPDATE films SET movieId=#[payload.movieId], movieTitle=#[payload.movieTitle], yearReleased=#[payload.yearReleased], avgRating=#[payload.avgRating], duration=#[payload.duration], genre=#[payload.genre] where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:update>
+
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/userAccount/updateUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/updateuser" allowedMethods="PUT" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_8.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	userId: payload.userId,
+	username: payload.username,
+	password: payload.password,
+	name: payload.name,
+	age: payload.age,
+	occupation: payload.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <db:update config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[UPDATE users SET userId=#[payload.userId], username=#[payload.username], password=#[payload.password], name=#[payload.name], age=#[payload.age], occupation=#[payload.occupation] where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:update>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/booking/deleteBooking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/deletebooking" allowedMethods="DELETE" doc:name="HTTP"/>
+        <db:delete config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[delete from bookings where bookingId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:delete>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/QAcinemasOverview/removeFilm:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/removefilm" allowedMethods="DELETE" doc:name="HTTP"/>
+        <db:delete config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[delete from films where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:delete>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/userAccount/removeUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/removeuser" allowedMethods="DELETE" doc:name="HTTP"/>
+        <db:delete config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[delete from users where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:delete>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/userAccount/addUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/singleaccount" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from users where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map_4.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	userId: $.userId,
+	username: $.username,
+	password: $.password,
+	name: $.name,
+	age: $.age,
+	occupation: $.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/booking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/displaybookings" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from bookings]]></db:parameterized-query>
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map_2.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	bookingId: $.bookingId,
+	userId: $.userId,
+	movieId: $.movieId,
+	film: $.movieTitle,
+	seats: $.noOfSeats,
+	screen: $.screen,
+	time: $.timeBooked,
+	date: $.date
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/QAcinemasOverview/displayFilms:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/displayfilms" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from films]]></db:parameterized-query>
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	id: $.movieId,
+	film: $.movieTitle,
+	year: $.yearReleased,
+	rating: $.avgRating,
+	duration: $.duration,
+	genre: $.genre
+}
+]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/userAccount:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/displayusers" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from users]]></db:parameterized-query>
+        </db:select>
+
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map_1.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	userId: $.userId,
+	username: $.username,
+	password: $.password,
+	name: $.name,
+	age: $.age,
+	occupation: $.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/booking/addBooking:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/addBooking" allowedMethods="POST" doc:name="HTTP"/>
+        <logger message="#[message.payload]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_4.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	bookingId: payload.bookingId,
+	userId: payload.userId,
+	movieId: payload.movieId,
+	movieTitle: payload.movieTitle,
+	noOfSeats: payload.noOfSeats,
+	screen: payload.screen,
+	timeBooked: payload.timeBooked,
+	date: payload.date
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <db:insert config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO bookings (bookingId, userId, movieId, movieTitle, timeBooked, noOfSeats, screen, date) 
+VALUES (#[payload.bookingId],#[payload.userId], #[payload.movieId], #[payload.movieTitle], #[payload.timeBooked], #[payload.noOfSeats], #[payload.screen],
+#[payload.date]);]]></db:parameterized-query>
+
+        </db:insert>
+        <set-payload value="&quot;added booking successfully&quot;" doc:name="Set Payload"/>
+
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/QAcinemasOverview/addFilm:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/addFilm" allowedMethods="POST" doc:name="HTTP"/>
+        <logger level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_5.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	movieId: payload.movieId,
+	movieTitle: payload.movieTitle,
+	yearReleased: payload.yearReleased,
+	avgRating: payload.avgRating,
+	duration: payload.duration,
+	genre: payload.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <db:insert config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO films (movieId, movieTitle, yearReleased, avgRating, duration, genre) 
+VALUES (#[payload.movieId], #[payload.movieTitle], #[payload.yearReleased], #[payload.avgRating], #[payload.duration], #[payload.genre]);]]></db:parameterized-query>
+
+        </db:insert>
+        <set-payload value="&quot;added film successfully&quot;" doc:name="Set Payload"/>
+
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/userAccount/addUser:application/json:api-config">
+        <http:listener config-ref="api-httpListenerConfig" path="/addUser" allowedMethods="POST" doc:name="HTTP"/>
+        <logger level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_3.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	userId: payload.userId,
+	username: payload.username,
+	password: payload.password,
+	name: payload.name,
+	age: payload.age,
+	occupation: payload.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <db:insert config-ref="sqlOnline" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO users (userId, username, age, name, password, occupation) 
+VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name], #[payload.password], #[payload.occupation]);]]></db:parameterized-query>
+
+        </db:insert>
+        <set-payload value="&quot;added user successfully&quot;" doc:name="Set Payload"/>
+
+        <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <apikit:mapping-exception-strategy name="api-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

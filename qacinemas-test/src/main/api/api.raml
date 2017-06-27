@@ -1,0 +1,156 @@
+#%RAML 1.0
+title: QA-Cinemas-api
+version: 1.0
+baseUri: http://localhost:8081/cinema
+mediaType: application/json
+
+securitySchemes:
+  oauth_2_0:
+    description: |
+      This API supports OAuth 2.0 for authenticating all API requests.
+    type: OAuth 2.0
+    describedBy:
+      headers:
+        Authorization:
+          description: |
+             Used to send a valid OAuth 2 access token. Do not use with the "access_token" query
+             string parameter.
+          type: string
+      queryParameters:
+        access_token:
+          description: |
+             Used to send a valid OAuth 2 access token. Do not use together with the "Authorization"
+             header
+          type: string
+      responses:
+        401:
+          description: |
+            Bad or expired token. This can happen if the user or the API revoked or expired an
+            access token. To fix, you should re-authenticate the user.
+        403:
+          description: |
+            Bad OAuth request (wrong consumer key, bad nonce, expired timestamp...). Unfortunately,
+            re-authenticating the user won't help here.
+    settings:
+      authorizationUri: http://localhost:8080/oauth/authorize
+      accessTokenUri: http://localhost:8080/oauth/token
+      authorizationGrants: [authorization_code, implicit] ##this can be a url or other types/single type
+types:
+  film: !include types/film.raml
+  user: !include types/user.raml
+  booking: !include types/booking.raml
+  confirm: !include types/confirmation.raml
+traits: 
+  basicMessage: !include traits/responseMessage.raml
+  updateMessage: !include traits/updateMessage.raml
+  deleteMessage: !include traits/deleteMessgae.raml
+/QAcinemasOverview:
+  /displayFilms:
+    get:
+      responses: 
+        200:
+          body: 
+            application/json:
+              type: film[]
+              example: !include Example_data/JsonArrayInput.json
+  ##/{id}:
+   ## get:
+   ## put:
+   ## delete:
+      
+  /addFilm:
+    post:
+       body: 
+        application/json:
+          type: film
+          example: !include Example_data/SingleFilm.json
+       is: [basicMessage]
+  /updateFilm:
+    put:
+      body: 
+        application/json:
+          type: film
+          example: !include Example_data/SingleFilm.json
+      is: [updateMessage]
+  /removeFilm:
+    delete:
+      body: 
+        application/json:
+          type: film
+          example: !include Example_data/SingleFilm.json
+      is: [deleteMessage]
+/userAccount:
+  get:
+    securedBy: [oauth_2_0]
+    body: 
+      application/json:
+        type: user[]
+        example: !include Example_data/allUsers.json
+        
+  /addUser:
+    post:
+      securedBy: [oauth_2_0]
+      body:
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+      is: [basicMessage]
+    get:
+      securedBy: [oauth_2_0]
+      body: 
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+  /removeUser:
+    delete:
+      securedBy: [oauth_2_0]
+      body: 
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+      is: [deleteMessage]
+  /updateUser:
+    put:
+      securedBy: [oauth_2_0]
+      body: 
+        application/json:
+          type: user
+          example: !include Example_data/exampleUser.json
+      is: [updateMessage]
+/booking:
+  get:
+    securedBy: [oauth_2_0]
+    body: 
+      application/json:
+        type: booking[]
+        example: !include Example_data/allBookings.json
+  /addBooking:
+    post:
+      body: 
+        application/json:
+          type: booking
+          example: !include Example_data/simpleBooking.json
+      is: [basicMessage]
+  /updateBooking:
+    put:
+      securedBy: [oauth_2_0]
+      body: 
+        application/json:
+          type: booking
+          example: !include Example_data/simpleBooking.json
+      is: [updateMessage]
+  /deleteBooking:
+    delete:
+      body: 
+        application/json:
+          type: booking
+          example: !include Example_data/simpleBooking.json
+      is: [deleteMessage]
+  /sendConfirmation:
+    get:
+      securedBy: [oauth_2_0]
+      body: 
+        application/json:
+          type: confirm
+          example: !include Example_data/confirmation.json
+      is: [basicMessage]
