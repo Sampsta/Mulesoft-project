@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mock="http://www.mulesoft.org/schema/mule/mock" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd">
+    <munit:config name="munit" doc:name="MUnit configuration" mock-connectors="false" mock-inbounds="false"/>
+    <spring:beans>
+        <spring:import resource="classpath:qacinemas-sql.xml"/>
+        <spring:import resource="classpath:globalexceptionstrategy.xml"/>
+    </spring:beans>
+    <munit:test name="QACinemas-test-suiteTest-put:/QACinemas/updateFilm:application/json:qacinemas-configTest" description="Test">
+        <set-payload value="#['{     &quot;filmID&quot;: 8,     &quot;filmName&quot;: &quot;Hampstead&quot;,     &quot;yearReleased&quot;: 2017,     &quot;avgRating&quot;: 3.05,     &quot;duration&quot;: 125,     &quot;genre&quot;: &quot;Drama&quot; }']" doc:name="Set Payload"/>
+        <flow-ref name="put:/QAcinemasOverview/updateFilm:api-config" doc:name="put:/QAcinemasOverview/updateFilm:api-config"/>
+        <munit:assert-on-equals message="Sorry. Messaage or data was not updated." expectedValue="{&quot;message&quot;:&quot;sucesfully updated&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-put:/QAcinemasOverview/updateFilm:application/json:api-config" description="MUnit Test">
+        <set-payload value="#['{     &quot;filmID&quot;: 7,     &quot;filmName&quot;: &quot;the mummy&quot;,     &quot;yearReleased&quot;: 2017,     &quot;avgRating&quot;: 3.05,     &quot;duration&quot;: 125,     &quot;genre&quot;: &quot;action&quot; }']" doc:name="Set Payload"/>
+        <flow-ref name="put:/QAcinemasOverview/updateFilm:application/json:api-config" doc:name="put:/QAcinemasOverview/updateFilm:application/json:api-config"/>
+        <munit:assert-on-equals message="Sorry. Messaage or data was not updated." expectedValue="{&quot;message&quot;:&quot;Sucessfully updated&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-put:/booking/updateBooking:application/json:api-config" description="MUnit Test">
+        <set-payload value="#[{bookingId: 1, userId: 2, movieId:1, movieTitle: 'wonder woman', noOfSeats: 2, screen: 1, timeBooked: '14:00', date: '28-06-2017'}]" doc:name="Set Payload"/>
+        <flow-ref name="put:/booking/updateBooking:application/json:api-config" doc:name="put:/booking/updateBooking:application/json:api-config"/>
+        <munit:assert-on-equals message="Sorry. Messaage or data was not updated." expectedValue="{&quot;message&quot;:&quot;sucesfully updated&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-put:/userAccount/updateUser:application/json:api-config" description="MUnit Test">
+    	<set-payload value="#[{userId: 3, username: 'epicsleepy', password: '111', name: 'adam', age: 25, occupation: 'consultant'}]" doc:name="Set Payload"/>
+        <flow-ref name="put:/userAccount/updateUser:application/json:api-config" doc:name="put:/userAccount/updateUser:application/json:api-config"/>
+        <munit:assert-on-equals message="Sorry. Messaage or data was not updated." expectedValue="{&quot;message&quot;:&quot;sucesfully updated&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>    
+</mule>

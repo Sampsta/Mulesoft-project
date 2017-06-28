@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xmlns:mock="http://www.mulesoft.org/schema/mule/mock" 
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.8.4"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
+    <munit:config name="munit"/>
+    <spring:beans>
+        <spring:import resource="classpath:qacinemas-sql.xml"/>
+        <spring:import resource="classpath:globalexceptionstrategy.xml"/>
+    </spring:beans>
+    
+    <munit:test name="QACinemas-test-suiteTest-getConfirmationOfBooking" description="MUnit Test">
+        <set-payload value="#[{bookingId: 1, userId: 1, movieId:1, movieTitle: 'wonder woman', noOfSeats: 2, screen: 1, timeBooked: '14:00', date: '21-06-2017'}]" doc:name="Set Payload"/>
+        <flow-ref name="getConfirmationOfBooking" doc:name="getConfirmationOfBooking"/>
+        <munit:assert-on-equals message="failed to retrieve" expectedValue="{bookingId: 1, userId: 1, movieId:1, movieTitle: 'wonder woman', noOfSeats: 2, screen: 1, timeBooked: '14:00', date: '21-06-2017'}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-get:/userAccount/addUser:application/json:api-config" description="MUnit Test">
+        <set-payload value="#[{userId: 3, username: 'epicsleepy', password: '111', name: 'adam', age: 25, occupation: 'consultant'}]" doc:name="Set Payload"/>
+        <flow-ref name="get:/userAccount/addUser:application/json:api-config" doc:name="get:/userAccount/addUser:application/json:api-config"/>
+        <munit:assert-on-equals message="failed to retrieve" expectedValue="{userId: 3, username: 'epicsleepy', password: '111', name: 'adam', age: 25, occupation: 'consultant'}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-get:/QAcinemasOverview:api-config" description="MUnit Test">
+        <set-payload value="#[{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'},{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}]" doc:name="Set Payload"/>
+        <flow-ref name="get:/QAcinemasOverview:api-config" doc:name="get:/QAcinemasOverview:api-config"/>
+        <munit:assert-on-equals message="failed to retrieve" expectedValue="{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'},{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-get:/QAcinemasOverview/displayFilms:api-config" description="MUnit Test">
+        <set-payload value="#[{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'},{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}]" doc:name="Set Payload"/>
+        <flow-ref name="get:/QAcinemasOverview/displayFilms:api-config" doc:name="get:/QAcinemasOverview/displayFilms:api-config"/>
+        <munit:assert-on-equals message="failed to retrieve" expectedValue="{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'},{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-get:/userAccount:application/json:api-config" description="MUnit Test">
+        <set-payload value="#[{userId: 3, username: 'epicsleepy', password: '111', name: 'adam', age: 25, occupation: 'consultant'}]" doc:name="Set Payload"/>
+        <flow-ref name="get:/userAccount:application/json:api-config" doc:name="get:/userAccount:application/json:api-config"/>
+        <munit:assert-on-equals message="failed to retrieve" expectedValue="{userId: 3, username: 'epicsleepy', password: '111', name: 'adam', age: 25, occupation: 'consultant'}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-get:/booking:application/json:api-config" description="MUnit Test">
+        <set-payload value="#[{bookingId: 1, userId: 1, movieId:1, movieTitle: 'wonder woman', noOfSeats: 2, screen: 1, timeBooked: '14:00', date: '21-06-2017'}]" doc:name="Set Payload"/>
+        <flow-ref name="get:/booking:application/json:api-config" doc:name="get:/booking:application/json:api-config"/>
+        <munit:assert-on-equals message="failed to retrieve" expectedValue="{bookingId: 1, userId: 1, movieId:1, movieTitle: 'wonder woman', noOfSeats: 2, screen: 1, timeBooked: '14:00', date: '21-06-2017'}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+</mule>

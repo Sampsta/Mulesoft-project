@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xmlns:mock="http://www.mulesoft.org/schema/mule/mock" 
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.8.4"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
+    <munit:config name="munit"/>
+    <spring:beans>
+        <spring:import resource="classpath:qacinemas-sql.xml"/>
+        <spring:import resource="classpath:globalexceptionstrategy.xml"/>
+    </spring:beans>
+    
+    <munit:test name="QACinemas-test-suiteTest-post:/userAccount/addUser:application/json:api-config" description="MUnit Test">
+        <set-payload value="#[{userId: 5, username: 'epicsleepy5', password: '111', name: 'adam', age: 25, occupation: 'consultant'}]" doc:name="Set Payload"/>
+        <flow-ref name="post:/userAccount/addUser:application/json:api-config" doc:name="post:/userAccount/addUser:application/json:api-config"/>
+        <munit:assert-on-equals message="user was not added." expectedValue="&quot;added user successfully&quot;" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-post:/QAcinemasOverview/addUser:api-config" description="MUnit Test">
+        <set-payload value="#[{userId: 6, username: 'epicsleepy6', password: '111', name: 'adam', age: 25, occupation: 'consultant'}]" doc:name="Set Payload"/>
+        <flow-ref name="post:/QAcinemasOverview/addUser:api-config" doc:name="post:/QAcinemasOverview/addUser:api-config"/>
+        <munit:assert-on-equals message="user was not added." expectedValue="&quot;added user successfully&quot;" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-post:/QAcinemasOverview/addFilm:application/json:api-config" description="MUnit Test">
+        <set-payload value="#[{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}]" doc:name="Set Payload"/>
+        <flow-ref name="post:/QAcinemasOverview/addFilm:application/json:api-config" doc:name="post:/QAcinemasOverview/addFilm:application/json:api-config"/>
+        <munit:assert-on-equals message="failed to add film" expectedValue="&quot;added film successfully&quot;" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-post:/QAcinemasOverview/addFilm:api-config" description="MUnit Test">
+        <set-payload value="#[{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}]" doc:name="Set Payload"/>
+        <flow-ref name="post:/QAcinemasOverview/addFilm:api-config" doc:name="post:/QAcinemasOverview/addFilm:api-config"/>
+        <munit:assert-on-equals  expectedValue="&quot;added film successfully&quot;" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="QACinemas-test-suiteTest-post:/booking/addBooking:application/json:api-config" description="MUnit Test">
+        <set-payload value="#[{bookingId: 1, userId: 1, movieId:1, movieTitle: 'wonder woman', noOfSeats: 2, screen: 1, timeBooked: '14:00', date: '21-06-2017'}]" doc:name="Set Payload"/>
+        <flow-ref name="post:/booking/addBooking:application/json:api-config" doc:name="post:/booking/addBooking:application/json:api-config"/>
+        <munit:assert-on-equals message="failed to add booking" expectedValue="&quot;added booking successfully&quot;" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+</mule>

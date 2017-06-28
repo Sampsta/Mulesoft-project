@@ -9,7 +9,7 @@ http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/moc
         <spring:import resource="classpath:globalexceptionstrategy.xml"/>
     </spring:beans>
     <munit:config mock-connectors="false" mock-inbounds="false" doc:name="MUnit configuration"/>
-    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="8081" basePath="/cinema" doc:name="HTTP Request Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration1" host="localhost" port="8081" basePath="/cinema" doc:name="HTTP Request Configuration"/>
     <munit:test name="put:/Bookings/updateBooking:application/json:qacinemas-config-200-application/json-FlowTest" description="Verifying functionality of [put:/Bookings/updateBooking:application/json:qacinemas-config-200-application/json]">
         <set-payload value="{&quot;bookingID&quot;: 1,&quot;filmName&quot;:&quot;Alien&quot;,&quot;timeBooked&quot;:&quot;21:45&quot;,&quot;noOfSeats&quot;:4,&quot;screen&quot;:5,&quot;date&quot;:&quot;06-07-2017&quot;}" doc:name="Set Payload"/>
         <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/Bookings/updateBooking" doc:name="HTTP">
@@ -134,12 +134,13 @@ http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/moc
     </munit:test>
     <munit:test name="post:/QACinemas/addFilm:application/json:qacinemas-config-200-application/json-FlowTest" description="Verifying functionality of [post:/QACinemas/addFilm:application/json:qacinemas-config-200-application/json]">
         <set-payload value="{&quot;filmName&quot;: &quot;The Mummy&quot;, &quot;yearReleased&quot;: 2017, &quot;avgRating&quot;: 3.05, &quot;duration&quot;: 111, &quot;genre&quot;: &quot;Fantasy&quot;}" doc:name="Set Payload"/>
-        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/QACinemas/addFilm" doc:name="HTTP">
+        <http:request config-ref="HTTP_Request_Configuration1" path="/QACinemas/addFilm" method="POST" doc:name="HTTP">
             <http:request-builder>
-                <http:header headerName="Accept" value="application/json" />
-                <http:header headerName="Content-Type" value="application/json" />
+                <http:header headerName="Accept" value="application/json"/>
+                <http:header headerName="Content-Type" value="application/json"/>
             </http:request-builder>
         </http:request>
+
         <object-to-string-transformer doc:name="http response to string" />
         <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="{&quot;message&quot;:&quot;Sucessfully added&quot;}" actualValue="#[payload]" doc:name="assert that - payload is as expected" />

@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mock="http://www.mulesoft.org/schema/mule/mock" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd ">
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mock="http://www.mulesoft.org/schema/mule/mock" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd">
     <spring:beans>
         <spring:import resource="classpath:qacinemas-mongod.xml" />
+        <spring:import resource="classpath:globalexceptionstrategy.xml"/>
     </spring:beans>
-    <munit:config mock-connectors="false" mock-inbounds="false" />
-    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="8081" basePath="/api" />
+    <munit:config mock-connectors="false" mock-inbounds="false" doc:name="MUnit configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="8081" basePath="/api" doc:name="HTTP Request Configuration"/>
     <munit:test name="put:/booking/updateBooking:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [put:/booking/updateBooking:application/json:api-config-200-application/json]">
-        <set-payload value="#[getResource('scaffolder/request/put_booking_updatebooking_application_json.json').asString()]" />
-        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/booking/updateBooking">
+        <set-payload value="#[getResource('scaffolder/request/put_booking_updatebooking_application_json.json').asString()]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/booking/updateBooking" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
                 <http:header headerName="Content-Type" value="application/json" />
@@ -18,8 +23,8 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/put_200_booking_updatebooking_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="put:/QAcinemasOverview/updateFilm:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [put:/QAcinemasOverview/updateFilm:application/json:api-config-200-application/json]">
-        <set-payload value="#[getResource('scaffolder/request/put_qacinemasoverview_updatefilm_application_json.json').asString()]" />
-        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/QAcinemasOverview/updateFilm">
+        <set-payload value="#[getResource('scaffolder/request/put_qacinemasoverview_updatefilm_application_json.json').asString()]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/QAcinemasOverview/updateFilm" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
                 <http:header headerName="Content-Type" value="application/json" />
@@ -30,8 +35,8 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/put_200_qacinemasoverview_updatefilm_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="put:/userAccount/updateUser:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [put:/userAccount/updateUser:application/json:api-config-200-application/json]">
-        <set-payload value="#[getResource('scaffolder/request/put_useraccount_updateuser_application_json.json').asString()]" />
-        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/userAccount/updateUser">
+        <set-payload value="#[getResource('scaffolder/request/put_useraccount_updateuser_application_json.json').asString()]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/userAccount/updateUser" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
                 <http:header headerName="Content-Type" value="application/json" />
@@ -42,7 +47,7 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/put_200_useraccount_updateuser_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="delete:/booking/deleteBooking:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [delete:/booking/deleteBooking:application/json:api-config-200-application/json]">
-        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/booking/deleteBooking">
+        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/booking/deleteBooking" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
             </http:request-builder>
@@ -52,7 +57,7 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/delete_200_booking_deletebooking_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="delete:/QAcinemasOverview/removeFilm:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [delete:/QAcinemasOverview/removeFilm:application/json:api-config-200-application/json]">
-        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/QAcinemasOverview/removeFilm">
+        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/QAcinemasOverview/removeFilm" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
             </http:request-builder>
@@ -62,7 +67,7 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/delete_200_qacinemasoverview_removefilm_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="delete:/userAccount/removeUser:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [delete:/userAccount/removeUser:application/json:api-config-200-application/json]">
-        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/userAccount/removeUser">
+        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/userAccount/removeUser" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
             </http:request-builder>
@@ -72,17 +77,17 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/delete_200_useraccount_removeuser_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="get:/userAccount/addUser:application/json:api-config---FlowTest" description="Verifying functionality of [get:/userAccount/addUser:application/json:api-config--]">
-        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/userAccount/addUser" />
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/userAccount/addUser" doc:name="HTTP"/>
         <object-to-string-transformer doc:name="http response to string" />
         <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq())]" doc:name="assert that - http.status eq " />
     </munit:test>
     <munit:test name="get:/booking:application/json:api-config---FlowTest" description="Verifying functionality of [get:/booking:application/json:api-config--]">
-        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/booking" />
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/booking" doc:name="HTTP"/>
         <object-to-string-transformer doc:name="http response to string" />
         <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq())]" doc:name="assert that - http.status eq " />
     </munit:test>
     <munit:test name="get:/QAcinemasOverview/displayFilms:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/QAcinemasOverview/displayFilms:api-config-200-application/json]">
-        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/QAcinemasOverview/displayFilms">
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/QAcinemasOverview/displayFilms" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
             </http:request-builder>
@@ -92,7 +97,7 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/get_200_qacinemasoverview_displayfilms_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="get:/booking/sendConfirmation:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/booking/sendConfirmation:application/json:api-config-200-application/json]">
-        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/booking/sendConfirmation">
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/booking/sendConfirmation" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
             </http:request-builder>
@@ -102,13 +107,13 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/get_200_booking_sendconfirmation_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="get:/userAccount:application/json:api-config---FlowTest" description="Verifying functionality of [get:/userAccount:application/json:api-config--]">
-        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/userAccount" />
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/userAccount" doc:name="HTTP"/>
         <object-to-string-transformer doc:name="http response to string" />
         <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq())]" doc:name="assert that - http.status eq " />
     </munit:test>
     <munit:test name="post:/booking/addBooking:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [post:/booking/addBooking:application/json:api-config-200-application/json]">
-        <set-payload value="#[getResource('scaffolder/request/post_booking_addbooking_application_json.json').asString()]" />
-        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/booking/addBooking">
+        <set-payload value="#[getResource('scaffolder/request/post_booking_addbooking_application_json.json').asString()]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/booking/addBooking" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
                 <http:header headerName="Content-Type" value="application/json" />
@@ -119,8 +124,8 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/post_200_booking_addbooking_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="post:/QAcinemasOverview/addFilm:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [post:/QAcinemasOverview/addFilm:application/json:api-config-200-application/json]">
-        <set-payload value="#[getResource('scaffolder/request/post_qacinemasoverview_addfilm_application_json.json').asString()]" />
-        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/QAcinemasOverview/addFilm">
+        <set-payload value="#[getResource('scaffolder/request/post_qacinemasoverview_addfilm_application_json.json').asString()]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/QAcinemasOverview/addFilm" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
                 <http:header headerName="Content-Type" value="application/json" />
@@ -131,8 +136,8 @@
         <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/post_200_qacinemasoverview_addfilm_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
     </munit:test>
     <munit:test name="post:/userAccount/addUser:application/json:api-config-200-application/json-FlowTest" description="Verifying functionality of [post:/userAccount/addUser:application/json:api-config-200-application/json]">
-        <set-payload value="#[getResource('scaffolder/request/post_useraccount_adduser_application_json.json').asString()]" />
-        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/userAccount/addUser">
+        <set-payload value="#[getResource('scaffolder/request/post_useraccount_adduser_application_json.json').asString()]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/userAccount/addUser" doc:name="HTTP">
             <http:request-builder>
                 <http:header headerName="Accept" value="application/json" />
                 <http:header headerName="Content-Type" value="application/json" />
