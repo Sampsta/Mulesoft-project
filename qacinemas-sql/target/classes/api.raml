@@ -146,11 +146,11 @@ traits:
           type: booking
           example: !include Example_data/simpleBooking.json
       is: [deleteMessage]
-  /sendConfirmation:
-    get:
-      securedBy: [oauth_2_0]
-      body: 
-        application/json:
-          type: confirm
-          example: !include Example_data/confirmation.json
-      is: [basicMessage]
+##  /sendConfirmation:
+##    get:
+##      securedBy: [oauth_2_0]
+##      body: 
+##        application/json:
+##          type: confirm
+##          example: !include Example_data/confirmation.json
+##      is: [basicMessage]

@@ -1,0 +1,151 @@
+#%RAML 1.0
+title: QA Cinemas
+version: 1.0
+baseUri: http://apps.qacinemas.com/api/
+
+securitySchemes:
+  oauth_2_0:
+    description: |
+      This API supports OAuth 2.0 for authenticating all API requests.
+    type: OAuth 2.0
+    describedBy:
+      headers:
+        Authorization:
+          description: |
+             Used to send a valid OAuth 2 access token. Do not use with the "access_token" query
+             string parameter.
+          type: string
+      queryParameters:
+        access_token:
+          description: |
+             Used to send a valid OAuth 2 access token. Do not use together with the "Authorization"
+             header
+          type: string
+      responses:
+        401:
+          description: |
+            Bad or expired token. This can happen if the user or the API revoked or expired an
+            access token. To fix, you should re-authenticate the user.
+        403:
+          description: |
+            Bad OAuth request (wrong consumer key, bad nonce, expired timestamp...). Unfortunately,
+            re-authenticating the user won't help here.
+    settings:
+      authorizationUri: http://localhost:8080/oauth/authorize
+      accessTokenUri: http://localhost:8080/oauth/token
+      authorizationGrants: [authorization_code, implicit]
+types: 
+  film: !include types/film.raml
+  user: !include types/user.raml
+  booking: !include types/booking.raml
+  confirmation: !include types/confirmation.raml 
+traits: 
+  successMessage: !include traits/successMessage.raml
+  updateMessage: !include traits/updateMessage.raml
+  deleteMessage: !include traits/deleteMessage.raml
+
+/QACinemas:
+  /displayFilms:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: film[]
+              example: !include ExampleData/AllFilms.json
+  /addFilm:
+    post:
+      body:
+        application/json:
+          type: film
+          example: !include ExampleData/SingleFilm.json
+      is: [successMessage]
+  /updateFilm:
+    put:
+      body: 
+        application/json:
+          type: film
+          example: !include ExampleData/SingleFilm.json
+      is: [updateMessage]
+  /removeFilm:
+    delete:   
+      queryParameters: 
+        filmID:
+          required: true
+          type: integer
+      is: [deleteMessage]
+      
+/UserAccounts:
+  /displayUsers:
+    get:
+      securedBy: [oauth_2_0]
+      responses: 
+        200:
+          body: 
+            application/json:
+              type: booking[]
+              example: !include ExampleData/AllBookings.json
+  /addUser:
+    post:
+      securedBy: [oauth_2_0]
+      body:
+        application/json:
+          type: user
+          example: !include ExampleData/SingleUser.json
+      is: [successMessage]
+  /updateUser:
+    put:
+      securedBy: [oauth_2_0]
+      body: 
+        application/json:
+          type: user
+          example: !include ExampleData/SingleUser.json
+      is: [updateMessage]
+  /removeUser:
+    delete:
+      securedBy: [oauth_2_0]
+      queryParameters: 
+        username:
+          required: true
+          type: string
+      is: [deleteMessage]
+/Bookings:
+  /displayBookings:
+    get:
+      securedBy: [oauth_2_0]
+      responses:
+        200:
+          body:
+            application/json:
+              type: booking[]
+              example: !include ExampleData/AllBookings.json
+  /addBooking:
+    post:
+      body: 
+        application/json:
+          type: booking
+          example: !include ExampleData/SingleBooking.json
+      is: [successMessage]
+  /updateBooking:
+    put:
+      securedBy: [oauth_2_0]
+      body: 
+        application/json:
+          type: booking
+          example: !include ExampleData/SingleBooking.json
+      is: [updateMessage]
+  /deleteBooking:
+    delete:     
+      queryParameters: 
+        bookingID:
+          required: true
+          type: integer
+      is: [deleteMessage]
+##  /sendConfirmation:
+##    get:
+##      securedBy: [oauth_2_0]
+##      body: 
+##        application/json:
+##         type: confirmation
+##          example: !include ExampleData/Confirmation.json
+##      is: [successMessage]

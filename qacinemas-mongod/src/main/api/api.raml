@@ -32,8 +32,8 @@ securitySchemes:
             Bad OAuth request (wrong consumer key, bad nonce, expired timestamp...). Unfortunately,
             re-authenticating the user won't help here.
     settings:
-      authorizationUri: http://localhost:8080/oauth/authorize
-      accessTokenUri: http://localhost:8080/oauth/token
+      authorizationUri: qacinemas-sql-test.cloudhub.io/oauth/authorize
+      accessTokenUri: qacinemas-sql-test.cloudhub.io/oauth/token
       authorizationGrants: [authorization_code, implicit] ##this can be a url or other types/single type
 types:
   film: !include types/film.raml

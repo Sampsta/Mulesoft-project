@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
@@ -8,7 +8,8 @@ http://www.mulesoft.org/schema/mule/ee/ftp http://www.mulesoft.org/schema/mule/e
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
-http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
     <http:listener-config name="api-httpListenerConfig" host="0.0.0.0" port="8081" basePath="/cinema" doc:name="HTTP Listener Configuration" />
     <apikit:config name="api-config" raml="api.raml" consoleEnabled="false" doc:name="Router" keepRamlBaseUri="false" />
     <file:connector name="File" writeToDirectory="src/main/resources/output" autoDelete="false" streaming="true" validateConnections="true" doc:name="File"/>
@@ -26,7 +27,7 @@ http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee
     </flow>
     <flow name="getConfirmationOfBooking">
         <http:listener config-ref="api-httpListenerConfig" path="/confirm" allowedMethods="GET" doc:name="HTTP"/>
-        <db:select config-ref="sqlOnline" doc:name="Database">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[select * from bookings where bookingId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:select>
         <dw:transform-message doc:name="Transform Message">
@@ -64,7 +65,7 @@ payload map {
 	genre: payload.genre
 }]]></dw:set-payload>
         </dw:transform-message>
-        <db:update config-ref="sqlOnline" doc:name="Database">
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[UPDATE films SET movieId=#[payload.movieId], movieTitle=#[payload.movieTitle], yearReleased=#[payload.yearReleased], avgRating=#[payload.avgRating], duration=#[payload.duration], genre=#[payload.genre] where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:update>
 
@@ -72,21 +73,22 @@ payload map {
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="delete:/QAcinemasOverview/removeFilm:api-config">
-        <db:delete config-ref="sqlOnline" doc:name="Database">
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[delete from users where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:delete>
+
         <set-payload value="{&quot;message&quot;:&quot;film removed&quot;}" doc:name="Set Payload" />
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="delete:/QAcinemasOverview/removeUser:api-config">
-        <db:delete config-ref="sqlOnline" doc:name="Database">
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[delete from users where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:delete>
         <set-payload value="{&quot;message&quot;:&quot;user removed&quot;}" doc:name="Set Payload"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="get:/QAcinemasOverview:api-config">
-        <db:select config-ref="sqlOnline" doc:name="Database">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[select * from films]]></db:parameterized-query>
         </db:select>
         <dw:transform-message doc:name="Transform Message">
@@ -122,7 +124,7 @@ payload map {
 	genre: payload.genre
 }]]></dw:set-payload>
         </dw:transform-message>
-        <db:insert config-ref="sqlOnline" doc:name="Database">
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[INSERT INTO films (movieId, movieTitle, yearReleased, avgRating, duration, genre) 
 VALUES (#[payload.movieId], #[payload.movieTitle], #[payload.yearReleased], #[payload.avgRating], #[payload.duration], #[payload.genre]);]]></db:parameterized-query>
         </db:insert>
@@ -145,7 +147,7 @@ VALUES (#[payload.movieId], #[payload.movieTitle], #[payload.yearReleased], #[pa
 	occupation: payload.occupation
 }]]></dw:set-payload>
         </dw:transform-message>
-        <db:insert config-ref="sqlOnline" doc:name="Database">
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[INSERT INTO users (userId, username, age, name, password, occupation) 
 VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name], #[payload.password], #[payload.occupation]);]]></db:parameterized-query>
         </db:insert>
@@ -171,7 +173,7 @@ VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name],
 }]]></dw:set-payload>
         </dw:transform-message>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
-        <db:update config-ref="sqlOnline" doc:name="Database">
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[UPDATE bookings SET bookingId=#[payload.bookingId], userId=#[payload.userId], movieId=#[payload.movieId], movieTitle=#[payload.movieTitle], noOfSeats=#[payload.noOfSeats], screen=#[payload.screen], timeBooked=#[payload.timeBooked], date=#[payload.date] where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:update>
 
@@ -195,7 +197,7 @@ VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name],
 }]]></dw:set-payload>
         </dw:transform-message>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
-        <db:update config-ref="sqlOnline" doc:name="Database">
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[UPDATE films SET movieId=#[payload.movieId], movieTitle=#[payload.movieTitle], yearReleased=#[payload.yearReleased], avgRating=#[payload.avgRating], duration=#[payload.duration], genre=#[payload.genre] where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:update>
 
@@ -219,7 +221,7 @@ VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name],
 }]]></dw:set-payload>
         </dw:transform-message>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
-        <db:update config-ref="sqlOnline" doc:name="Database">
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[UPDATE users SET userId=#[payload.userId], username=#[payload.username], password=#[payload.password], name=#[payload.name], age=#[payload.age], occupation=#[payload.occupation] where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:update>
         <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
@@ -227,7 +229,7 @@ VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name],
     </flow>
     <flow name="delete:/booking/deleteBooking:application/json:api-config">
         <http:listener config-ref="api-httpListenerConfig" path="/deletebooking" allowedMethods="DELETE" doc:name="HTTP"/>
-        <db:delete config-ref="sqlOnline" doc:name="Database">
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[delete from bookings where bookingId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:delete>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
@@ -237,7 +239,7 @@ VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name],
     </flow>
     <flow name="delete:/QAcinemasOverview/removeFilm:application/json:api-config">
         <http:listener config-ref="api-httpListenerConfig" path="/removefilm" allowedMethods="DELETE" doc:name="HTTP"/>
-        <db:delete config-ref="sqlOnline" doc:name="Database">
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[delete from films where movieId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:delete>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
@@ -247,7 +249,7 @@ VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name],
     </flow>
     <flow name="delete:/userAccount/removeUser:application/json:api-config">
         <http:listener config-ref="api-httpListenerConfig" path="/removeuser" allowedMethods="DELETE" doc:name="HTTP"/>
-        <db:delete config-ref="sqlOnline" doc:name="Database">
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[delete from users where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:delete>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
@@ -257,7 +259,7 @@ VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name],
     </flow>
     <flow name="get:/userAccount/addUser:application/json:api-config">
         <http:listener config-ref="api-httpListenerConfig" path="/singleaccount" allowedMethods="GET" doc:name="HTTP"/>
-        <db:select config-ref="sqlOnline" doc:name="Database">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[select * from users where userId = #[message.inboundProperties.'http.query.params'.id]]]></db:parameterized-query>
         </db:select>
         <dw:transform-message doc:name="Transform Message">
@@ -279,7 +281,7 @@ payload map {
     </flow>
     <flow name="get:/booking:application/json:api-config">
         <http:listener config-ref="api-httpListenerConfig" path="/displaybookings" allowedMethods="GET" doc:name="HTTP"/>
-        <db:select config-ref="sqlOnline" doc:name="Database">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[select * from bookings]]></db:parameterized-query>
         </db:select>
         <dw:transform-message doc:name="Transform Message">
@@ -303,7 +305,7 @@ payload map {
     </flow>
     <flow name="get:/QAcinemasOverview/displayFilms:api-config">
         <http:listener config-ref="api-httpListenerConfig" path="/displayfilms" allowedMethods="GET" doc:name="HTTP"/>
-        <db:select config-ref="sqlOnline" doc:name="Database">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[select * from films]]></db:parameterized-query>
         </db:select>
         <dw:transform-message doc:name="Transform Message">
@@ -326,7 +328,7 @@ payload map {
     </flow>
     <flow name="get:/userAccount:application/json:api-config">
         <http:listener config-ref="api-httpListenerConfig" path="/displayusers" allowedMethods="GET" doc:name="HTTP"/>
-        <db:select config-ref="sqlOnline" doc:name="Database">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[select * from users]]></db:parameterized-query>
         </db:select>
 
@@ -366,12 +368,12 @@ payload map {
 	date: payload.date
 }]]></dw:set-payload>
         </dw:transform-message>
-        <db:insert config-ref="sqlOnline" doc:name="Database">
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[INSERT INTO bookings (bookingId, userId, movieId, movieTitle, timeBooked, noOfSeats, screen, date) 
 VALUES (#[payload.bookingId],#[payload.userId], #[payload.movieId], #[payload.movieTitle], #[payload.timeBooked], #[payload.noOfSeats], #[payload.screen],
 #[payload.date]);]]></db:parameterized-query>
-
         </db:insert>
+
         <set-payload value="&quot;added booking successfully&quot;" doc:name="Set Payload"/>
 
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
@@ -393,11 +395,11 @@ VALUES (#[payload.bookingId],#[payload.userId], #[payload.movieId], #[payload.mo
 	genre: payload.genre
 }]]></dw:set-payload>
         </dw:transform-message>
-        <db:insert config-ref="sqlOnline" doc:name="Database">
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[INSERT INTO films (movieId, movieTitle, yearReleased, avgRating, duration, genre) 
 VALUES (#[payload.movieId], #[payload.movieTitle], #[payload.yearReleased], #[payload.avgRating], #[payload.duration], #[payload.genre]);]]></db:parameterized-query>
-
         </db:insert>
+
         <set-payload value="&quot;added film successfully&quot;" doc:name="Set Payload"/>
 
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
@@ -419,7 +421,7 @@ VALUES (#[payload.movieId], #[payload.movieTitle], #[payload.yearReleased], #[pa
 	occupation: payload.occupation
 }]]></dw:set-payload>
         </dw:transform-message>
-        <db:insert config-ref="sqlOnline" doc:name="Database">
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
             <db:parameterized-query><![CDATA[INSERT INTO users (userId, username, age, name, password, occupation) 
 VALUES (#[payload.userId], #[payload.username], #[payload.age], #[payload.name], #[payload.password], #[payload.occupation]);]]></db:parameterized-query>
 

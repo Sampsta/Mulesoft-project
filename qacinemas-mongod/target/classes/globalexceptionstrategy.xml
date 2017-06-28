@@ -6,11 +6,20 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
     <choice-exception-strategy name="globalexceptionstrategy">
-        <catch-exception-strategy doc:name="Catch Exception Strategy" when="#[exception.causedBy(java.lang.RuntimeException)]">
-            <set-payload value="#['run time exception caught, bad syntax on post']" doc:name="catchAll"/>
+        <catch-exception-strategy doc:name="Catch RunTime Exception" when="#[exception.causedBy(java.lang.RuntimeException)]">
+            <logger message="failed at runtime!" level="ERROR" doc:name="Logger"/>
+            <set-payload value="#[exception.cause]\n\r resulted in \n\r #[exception]" doc:name="print runtime exception"/>
+            <logger message="#[payload]" level="INFO" doc:name="Logger"/>
         </catch-exception-strategy>
-        <catch-exception-strategy doc:name="Catch Exception Strategy">
-            <set-payload value="#['something went wrong, try looking at the syntax of the data entry']" doc:name="generic"/>
+        <catch-exception-strategy doc:name="Catch IOException" when="#[exception.causedBy(java.lang.IOException)]">
+            <logger message="IO exception found" level="INFO" doc:name="Logger"/>
+            <set-payload value="#[exception.cause]\n\r resulted in \n\r #[exception]" doc:name="print IO exception"/>
+            <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="Catch Other Exception Strategy">
+            <logger message="failed not caused by IO or runtime exception" level="INFO" doc:name="Logger"/>
+            <set-payload value="#[exception.cause]\n\r resulted in \n\r #[exception]" doc:name="print other exception"/>
+            <logger message="#[payload]" level="INFO" doc:name="Logger"/>
         </catch-exception-strategy>
     </choice-exception-strategy>
 </mule>
