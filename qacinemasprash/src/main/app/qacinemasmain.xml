@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <apikit:config name="qacinemas-config" raml="qacinemas.raml" consoleEnabled="false" doc:name="Router" />
+    <http:listener-config name="qacinemas-httpListenerConfig" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration" />
+    <db:mysql-config name="MySQL_Configuration" host="muledev.ctemptlenqx0.eu-west-2.rds.amazonaws.com" port="3306" user="user" password="Pa$$w0rd" database="qacinemasoverviewdb" doc:name="MySQL Configuration" />
+    <flow name="qacinemas-main">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/api/*" doc:name="HTTP" />
+        <apikit:router config-ref="qacinemas-config" doc:name="APIkit Router" />
+        <exception-strategy ref="qacinemas-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="qacinemas-console">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="qacinemas-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="put:/Bookings/updateBooking:application/json:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/Bookings/updateBooking" allowedMethods="PUT" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_5.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	bookingID: payload.bookingID as :number,
+	filmName: payload.filmName,
+	timeBooked: payload.timeBooked,
+	noOfSeats: payload.noOfSeats as :number,
+	screen: payload.screen as :number,
+	date: payload.date
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="dbUpdate" value="#['beforeDB']" doc:name="Variable"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[UPDATE bookings
+SET filmName = #[payload.filmName], timeBooked = #[payload.timeBooked], noOfSeats = #[payload.noOfSeats], screen = #[payload.screen], date = #[payload.date]
+WHERE bookingID = #[payload.bookingID];]]></db:parameterized-query>
+        </db:update>
+        <logger message="#[&quot;The value of the dbUpdate was: &quot; + flowVars.dbUpdate=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbUpdate.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully updated&quot;}" doc:name="Set Payload - Success"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to update as bookingID was not found&quot;}" doc:name="Set Payload - Failed"/>
+            </otherwise>
+        </choice>
+        <exception-strategy ref="qacinemasmainChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/QACinemas/updateFilm:application/json:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/QACinemas/updateFilm" allowedMethods="PUT" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_3.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	filmID: payload.filmID as :number,
+	filmName: payload.filmName,
+	yearReleased: payload.yearReleased as :number,
+	avgRating: payload.avgRating as :number,
+	duration: payload.duration as :number,
+	genre: payload.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="dbUpdate" value="#['beforeDB']" doc:name="Variable"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[UPDATE films
+SET filmName = #[payload.filmName], yearReleased = #[payload.yearReleased], avgRating = #[payload.avgRating], duration = #[payload.duration], genre = #[payload.genre]
+WHERE filmID = #[payload.filmID];]]></db:parameterized-query>
+        </db:update>
+        <logger message="#[&quot;The value of the dbUpdate was: &quot; + flowVars.dbUpdate=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbUpdate.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully updated&quot;}" doc:name="Set Payload - Success"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to update as filmID was not found&quot;}" doc:name="Set Payload - Failed"/>
+            </otherwise>
+        </choice>
+        <exception-strategy ref="qacinemasmainChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/UserAccounts/updateUser:application/json:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/UserAccounts/updateUser" allowedMethods="PUT" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_4.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	name: payload.name,
+	age: payload.age as :number,
+	username: payload.username,
+	password: payload.password,
+	occupation: payload.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="dbUpdate" value="#['beforeDB']" doc:name="Variable"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[UPDATE users
+SET name = #[payload.name], age = #[payload.age], password = #[payload.password], occupation = #[payload.occupation]
+WHERE username = #[payload.username];]]></db:parameterized-query>
+        </db:update>
+        <logger message="#[&quot;The value of the dbUpdate was: &quot; + flowVars.dbUpdate=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbUpdate.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully updated&quot;}" doc:name="Set Payload - Success"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to update as username was not found&quot;}" doc:name="Set Payload - Failed"/>
+            </otherwise>
+        </choice>
+        <exception-strategy ref="qacinemasmainChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="delete:/Bookings/deleteBooking:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/Bookings/deleteBooking" allowedMethods="DELETE" doc:name="HTTP"/>
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[DELETE FROM bookings WHERE bookingID = #[message.inboundProperties.'http.query.params'.bookingID];]]></db:parameterized-query>
+        </db:delete>
+        <set-variable variableName="dbDelete" value="#['afterDB']" doc:name="Variable"/>
+        <logger message="#[&quot;The value of the dbDelete was: &quot; + flowVars.dbDelete=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbDelete.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully removed&quot;}" doc:name="Set Payload - Success"/>
+                <logger message="#[&quot;---Booking ID: &quot; + message.inboundProperties.'http.query.params'.bookingID + &quot; was deleted---&quot;]" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to delete as bookingID was not found or query parameter was not properly defined in the call&quot;}" doc:name="Set Payload - Failed"/>
+                <logger message="#[&quot;---Booking ID: &quot; + message.inboundProperties.'http.query.params'.bookingID + &quot; was NOT deleted---&quot;]" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+
+    </flow>
+    <flow name="delete:/QACinemas/removeFilm:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/QACinemas/removeFilm" allowedMethods="DELETE" doc:name="HTTP"/>
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[DELETE FROM films WHERE filmID = #[message.inboundProperties.'http.query.params'.filmID];]]></db:parameterized-query>
+
+        </db:delete>
+        <set-variable variableName="dbDelete" value="#['afterDB']" doc:name="Variable"/>
+        <logger message="#[&quot;The value of the dbDelete was: &quot; + flowVars.dbDelete=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbDelete.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully removed&quot;}" doc:name="Set Payload - Success"/>
+                <logger message="#[&quot;---Film ID: &quot; + message.inboundProperties.'http.query.params'.filmID + &quot; was deleted---&quot;]" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to delete as filmID was not found or query parameter was not properly defined in the call&quot;}" doc:name="Set Payload - Failed"/>
+                <logger message="#[&quot;---Film ID: &quot; + message.inboundProperties.'http.query.params'.filmID + &quot; was NOT deleted---&quot;]" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+
+    </flow>
+    <flow name="delete:/UserAccounts/removeUser:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/UserAccounts/removeUser" allowedMethods="DELETE" doc:name="HTTP"/>
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[DELETE FROM users WHERE username = #[message.inboundProperties.'http.query.params'.username];]]></db:parameterized-query>
+
+        </db:delete>
+        <set-variable variableName="dbDelete" value="#['afterDB']" doc:name="Variable"/>
+        <logger message="#[&quot;The value of the dbDelete was: &quot; + flowVars.dbDelete=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbDelete.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully removed&quot;}" doc:name="Set Payload - Success"/>
+                <logger message="#[&quot;---Username: &quot; + message.inboundProperties.'http.query.params'.username + &quot; was deleted---&quot;]" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to delete as username was not found or query parameter was not properly defined in the call&quot;}" doc:name="Set Payload - Failed"/>
+                <logger message="#[&quot;---Username: &quot; + message.inboundProperties.'http.query.params'.username + &quot; was NOT deleted---&quot;]" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+
+    </flow>
+    <flow name="get:/Bookings/displayBookings:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/Bookings/displayBookings" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM bookings]]></db:parameterized-query>
+
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map_1.dwl" />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	bookingID: $.bookingID,
+	filmName: $.filmName,
+	timeBooked: $.timeBooked,
+	noOfSeats: $.noOfSeats,
+	screen: $.screen,
+	date: $.date
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-payload value="#[payload]" doc:name="Set Payload"/>
+
+    </flow>
+    <flow name="get:/QACinemas/displayFilms:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/QACinemas/displayFilms" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM films]]></db:parameterized-query>
+
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map.dwl" />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	filmID: $.filmID,
+	filmName: $.filmName,
+	yearReleased: $.yearReleased,
+	avgRating: $.avgRating,
+	duration: $.duration ++ " mins",
+	genre: $.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-payload value="#[payload]" doc:name="Set Payload"/>
+
+    </flow>
+    <flow name="get:/UserAccounts/displayUsers:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/UserAccounts/displayUsers" allowedMethods="GET" doc:name="HTTP"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM users]]></db:parameterized-query>
+
+        </db:select>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\list_map_1.dwl" />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map {
+	name: $.name,
+	age: $.age,
+	username: $.username,
+	password: $.password,
+	occupation: $.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-payload value="#[payload]" doc:name="Set Payload" />
+    </flow>
+
+    <flow name="post:/Bookings/addBooking:application/json:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/Bookings/addBooking" allowedMethods="POST" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_2.json" />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	filmName: payload.filmName,
+	timeBooked: payload.timeBooked,
+	noOfSeats: payload.noOfSeats as :number,
+	screen: payload.screen as :number,
+	date: payload.date
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="dbInsert" value="#['beforeDB']" doc:name="Variable"/>
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO bookings (filmName, timeBooked, noOfSeats, screen, date)  
+VALUES (#[payload.filmName], #[payload.timeBooked], #[payload.noOfSeats], #[payload.screen], #[payload.date]);]]></db:parameterized-query>
+
+        </db:insert>
+        <logger message="#[&quot;The value of the dbInsert was: &quot; + flowVars.dbInsert=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbInsert.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully added&quot;}" doc:name="Set Payload - Success"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to add a new booking and no exceptions generated thus it was a very obscure error&quot;}" doc:name="Set Payload - Failed"/>
+            </otherwise>
+        </choice>
+        <exception-strategy ref="qacinemasmainChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/QACinemas/addFilm:application/json:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/QACinemas/addFilm" allowedMethods="POST" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json.json" />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	filmName: payload.filmName,
+	yearReleased: payload.yearReleased as :number,
+	avgRating: payload.avgRating as :number,
+	duration: payload.duration as :number,
+	genre: payload.genre
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="dbInsert" value="#['beforeDB']" doc:name="Variable"/>
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO films (filmName, yearReleased, avgRating, duration, genre)  
+VALUES (#[payload.filmName], #[payload.yearReleased], #[payload.avgRating], #[payload.duration], #[payload.genre]);]]></db:parameterized-query>
+
+        </db:insert>
+        <logger message="#[&quot;The value of the dbInsert was: &quot; + flowVars.dbInsert=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbInsert.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully added&quot;}" doc:name="Set Payload - Success"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to add a new film and no exceptions generated thus it was a very obscure error&quot;}" doc:name="Set Payload - Failed"/>
+            </otherwise>
+        </choice>
+
+        <exception-strategy ref="qacinemasmainChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="post:/UserAccounts/addUser:application/json:qacinemas-config">
+        <http:listener config-ref="qacinemas-httpListenerConfig" path="/UserAccounts/addUser" allowedMethods="POST" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_1.json" />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	name: payload.name,
+	age: payload.age as :number,
+	username: payload.username,
+	password: payload.password,
+	occupation: payload.occupation
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="dbInsert" value="#['beforeDB']" doc:name="Variable"/>
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO users (username, password, name, age, occupation)  
+VALUES (#[payload.username], #[payload.password], #[payload.name], #[payload.age], #[payload.occupation]);]]></db:parameterized-query>
+
+
+        </db:insert>
+        <logger message="#[&quot;The value of the dbInsert was: &quot; + flowVars.dbInsert=payload]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.dbInsert.equals(1)]">
+                <set-payload value="{&quot;message&quot;:&quot;Sucessfully added&quot;}" doc:name="Set Payload - Success"/>
+            </when>
+            <otherwise>
+                <set-payload value="{&quot;message&quot;:&quot;Failed to add a new user and no exceptions generated thus it was a very obscure error&quot;}" doc:name="Set Payload - Failed"/>
+            </otherwise>
+        </choice>
+        <exception-strategy ref="qacinemasmainChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+
+    <apikit:mapping-exception-strategy name="qacinemas-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+    
+
+
+</mule>

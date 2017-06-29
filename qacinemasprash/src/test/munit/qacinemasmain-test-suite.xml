@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <munit:config mock-connectors="false" mock-inbounds="false" name="munit" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:qacinemasmain.xml"/>
+        <spring:import resource="classpath:globalexceptionstrategy.xml"/>
+    </spring:beans>
+    <munit:test name="qacinemasmain-test-suite-put:/Bookings/updateBooking:application/json:qacinemas-configTest" description="Test">
+        <set-payload value="{&quot;bookingID&quot;: 1,&quot;filmName&quot;:&quot;Alien&quot;,&quot;timeBooked&quot;:&quot;21:35&quot;,&quot;noOfSeats&quot;:3,&quot;screen&quot;:5,&quot;date&quot;:&quot;06-07-2017&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+        <flow-ref name="put:/Bookings/updateBooking:application/json:qacinemas-config" doc:name="put:/Bookings/updateBooking:application/json:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully updated&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="qacinemasmain-test-suite-put:/QACinemas/updateFilm:application/json:qacinemas-configTest" description="Test">
+        <set-payload value="{     &quot;filmID&quot;: 9,     &quot;filmName&quot;: &quot;Hampstead&quot;,     &quot;yearReleased&quot;: 2017,     &quot;avgRating&quot;: 3.15,     &quot;duration&quot;: 126,     &quot;genre&quot;: &quot;Drama&quot; }" mimeType="application/json" doc:name="Set Payload"/>
+        <flow-ref name="put:/QACinemas/updateFilm:application/json:qacinemas-config" doc:name="put:/QACinemas/updateFilm:application/json:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully updated&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="qacinemasmain-test-suite-put:/UserAccounts/updateUser:application/json:qacinemas-configTest" description="Test">
+        <set-payload value="{&quot;name&quot;:&quot;Steve Manning&quot;,&quot;age&quot;: 23, &quot;username&quot;:&quot;smanning&quot;, &quot;password&quot;:&quot;pass123456&quot;, &quot;occupation&quot;:&quot;consultant&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+        <flow-ref name="put:/UserAccounts/updateUser:application/json:qacinemas-config" doc:name="put:/UserAccounts/updateUser:application/json:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully updated&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    
+    <munit:test name="qacinemasmain-test-suite-delete:/Bookings/deleteBooking:qacinemas-configTest" description="Test">
+        <munit:set payload="#[]" doc:name="Set Message">
+            <munit:inbound-properties>
+                <munit:inbound-property key="http.query.params" value="#[['bookingID':4]]"/>
+            </munit:inbound-properties>
+        </munit:set>
+        <flow-ref name="delete:/Bookings/deleteBooking:qacinemas-config" doc:name="delete:/Bookings/deleteBooking:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="qacinemasmain-test-suite-delete:/QACinemas/removeFilm:qacinemas-configTest" description="Test">
+        <munit:set payload="#[]" doc:name="Set Message">
+            <munit:inbound-properties>
+                <munit:inbound-property key="http.query.params" value="#[['filmID':12]]"/>
+            </munit:inbound-properties>
+        </munit:set>
+        <flow-ref name="delete:/QACinemas/removeFilm:qacinemas-config" doc:name="delete:/QACinemas/removeFilm:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="qacinemasmain-test-suite-delete:/UserAccounts/removeUser:qacinemas-configTest" description="Test">
+        <munit:set payload="#[]" doc:name="Set Message">
+            <munit:inbound-properties>
+                <munit:inbound-property key="http.query.params" value="#[['username':'jsmith']]"/>
+            </munit:inbound-properties>
+        </munit:set>
+        <flow-ref name="delete:/UserAccounts/removeUser:qacinemas-config" doc:name="delete:/UserAccounts/removeUser:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    
+    <munit:test name="qacinemasmain-test-suite-post:/Bookings/addBooking:application/json:qacinemas-configTest" description="Test">
+        <set-payload value="{&quot;filmName&quot;:&quot;Hampstead&quot;,&quot;timeBooked&quot;:&quot;20:25&quot;,&quot;noOfSeats&quot;:2,&quot;screen&quot;:1,&quot;date&quot;:&quot;11-07-2017&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+        <flow-ref name="post:/Bookings/addBooking:application/json:qacinemas-config" doc:name="post:/Bookings/addBooking:application/json:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully added&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="qacinemasmain-test-suite-post:/QACinemas/addFilm:application/json:qacinemas-configTest" description="Test">
+        <set-payload value="{&quot;filmName&quot;: &quot;The House&quot;, &quot;yearReleased&quot;: 2017, &quot;avgRating&quot;: 3.47, &quot;duration&quot;: 148, &quot;genre&quot;: &quot;Comedy&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+        <flow-ref name="post:/QACinemas/addFilm:application/json:qacinemas-config" doc:name="post:/QACinemas/addFilm:application/json:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully added&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="qacinemasmain-test-suite-post:/UserAccounts/addUser:application/json:qacinemas-configTest" description="Test">
+        <set-payload value="{&quot;name&quot;:&quot;Dan Sampson&quot;,&quot;age&quot;: 25, &quot;username&quot;:&quot;dsampson&quot;, &quot;password&quot;:&quot;pass135&quot;, &quot;occupation&quot;:&quot;consultant&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+        <flow-ref name="post:/UserAccounts/addUser:application/json:qacinemas-config" doc:name="post:/UserAccounts/addUser:application/json:qacinemas-config"/>
+        <munit:assert-on-equals message="An error occured. Please see error description for further details : --" expectedValue="{&quot;message&quot;:&quot;Sucessfully added&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
+    </munit:test>
+    
+</mule>

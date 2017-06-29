@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:smtps="http://www.mulesoft.org/schema/mule/smtps" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:smtps="http://www.mulesoft.org/schema/mule/smtps" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
@@ -19,6 +21,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
     <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="root" database="qacinemas-sql" doc:name="MySQL Configuration"/>
     <mongo:config name="Mongo_DB" username="root" database="qacinemas" doc:name="Mongo DB"/>
     <mongo:config name="Mongo_DBOnline" username="user" password="Pa$$w0rd" database="qacinemas-mongod" host="ec2-35-176-252-176.eu-west-2.compute.amazonaws.com" doc:name="Mongo DB"/>
+    <jms:activemq-connector name="Active_MQ" specification="1.1" username="admin" password="admin" brokerURL="tcp://localhost:61616" validateConnections="true" doc:name="Active MQ"/>
     <flow name="api-main">
         <http:listener config-ref="api-httpListenerConfig" path="/api/*" doc:name="HTTP" />
         <apikit:router config-ref="api-config" doc:name="APIkit Router" />
@@ -37,6 +40,8 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:find-one-object-using-query-map>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
         <smtp:outbound-endpoint host="smtp.gmail.com" user="sampsta1505@%40gmail.com" password="Anime1505" connector-ref="Gmail" to="sampsta1505@gmail.com" from="sampsta1505@gmail.com" subject="confirmation-test" responseTimeout="10000" doc:name="SMTP"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <jms:outbound-endpoint queue="getConfirmation" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="put:/QAcinemasOverview/updateFilm:api-config">
@@ -56,6 +61,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:update-objects-by-function-using-map>
 
         <set-payload value="{&quot;message&quot;:&quot;movie updated&quot;}" doc:name="Set Payload" />
+         <jms:outbound-endpoint queue="updateFilm" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="delete:/QAcinemasOverview/removeFilm:api-config">
@@ -66,6 +72,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:remove-objects-using-query-map>
 
         <set-payload value="{&quot;message&quot;:&quot;film removed&quot;}" doc:name="Set Payload" />
+        <jms:outbound-endpoint queue="deleteFilm" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="delete:/QAcinemasOverview/removeUser:api-config">
@@ -75,11 +82,16 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
             </mongo:query-attributes>
         </mongo:remove-objects-using-query-map>
         <set-payload value="{&quot;message&quot;:&quot;user removed&quot;}" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="deleteUser" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="get:/QAcinemasOverview:api-config">
         <mongo:find-objects config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:mongo-collection-to-json doc:name="Mongo DB"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <jms:outbound-endpoint queue="getFilm" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="post:/QAcinemasOverview/addFilm:api-config">
@@ -88,6 +100,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:insert-object config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
 
         <set-payload value="{&quot;message&quot;:&quot;film sucesfully added&quot;}" doc:name="Set Payload" />
+        <jms:outbound-endpoint queue="newFilm" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="post:/QAcinemasOverview/addUser:api-config">
@@ -96,6 +109,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:insert-object config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB"/>
 
         <set-payload value="{&quot;message&quot;:&quot;user added&quot;}" doc:name="Set Payload" />
+        <jms:outbound-endpoint queue="newUser" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="put:/booking/updateBooking:application/json:api-config">
@@ -119,6 +133,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:update-objects-by-function-using-map>
 
         <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="updateBooking" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="put:/QAcinemasOverview/updateFilm:application/json:api-config">
@@ -140,6 +155,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:update-objects-by-function-using-map>
 
         <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="updateFilm" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="put:/userAccount/updateUser:application/json:api-config">
@@ -160,6 +176,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
             </mongo:element-attributes>
         </mongo:update-objects-by-function-using-map>
         <set-payload value="{&quot;message&quot;:&quot;sucesfully updated&quot;}" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="updateUser" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="delete:/booking/deleteBooking:application/json:api-config">
@@ -171,6 +188,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:remove-objects-using-query-map>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
         <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="deleteBooking" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="delete:/QAcinemasOverview/removeFilm:application/json:api-config">
@@ -182,6 +200,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:remove-objects-using-query-map>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
         <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="deleteFilm" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="delete:/userAccount/removeUser:application/json:api-config">
@@ -193,6 +212,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         </mongo:remove-objects-using-query-map>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
         <set-payload value="{&quot;message&quot;:&quot;sucesfully removed&quot;}" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="deleteUser" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="get:/userAccount/addUser:application/json:api-config">
@@ -203,6 +223,10 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
             </mongo:query-attributes>
         </mongo:find-one-object-using-query-map>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:mongo-collection-to-json doc:name="Mongo DB"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <jms:outbound-endpoint queue="getUser" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="get:/booking:application/json:api-config">
@@ -210,6 +234,10 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:find-objects config-ref="Mongo_DBOnline" collection="bookings" doc:name="Mongo DB">
         </mongo:find-objects>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:mongo-collection-to-json doc:name="Mongo DB"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <jms:outbound-endpoint queue="getBooking" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="get:/QAcinemasOverview/displayFilms:api-config">
@@ -217,6 +245,10 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:find-objects config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
 
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:mongo-collection-to-json doc:name="Mongo DB"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <jms:outbound-endpoint queue="getFilm" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="get:/userAccount:application/json:api-config">
@@ -224,6 +256,10 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:find-objects config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB"/>
 
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <mongo:mongo-collection-to-json doc:name="Mongo DB"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <jms:outbound-endpoint queue="getUser" connector-ref="Active_MQ" doc:name="JMS"/>
         <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
     </flow>
     <flow name="post:/booking/addBooking:application/json:api-config">
@@ -233,6 +269,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:insert-object config-ref="Mongo_DBOnline" collection="bookings" doc:name="Mongo DB"/>
 
         <set-payload value="&quot;added booking successfully&quot;" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="newBooking" connector-ref="Active_MQ" doc:name="JMS"/>
 
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
@@ -243,6 +280,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:insert-object config-ref="Mongo_DBOnline" collection="films" doc:name="Mongo DB"/>
 
         <set-payload value="&quot;added film successfully&quot;" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="newFilm" connector-ref="Active_MQ" doc:name="JMS"/>
 
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>
@@ -253,6 +291,7 @@ http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/sm
         <mongo:insert-object config-ref="Mongo_DBOnline" collection="users" doc:name="Mongo DB"/>
 
         <set-payload value="&quot;added user successfully&quot;" doc:name="Set Payload"/>
+        <jms:outbound-endpoint queue="newUser" connector-ref="Active_MQ" doc:name="JMS"/>
 
         <exception-strategy ref="globalexceptionstrategy" doc:name="Reference Exception Strategy"/>
     </flow>

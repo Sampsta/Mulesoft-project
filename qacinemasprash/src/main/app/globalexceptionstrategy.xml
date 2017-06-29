@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+
+    <choice-exception-strategy name="qacinemasmainChoice_Exception_Strategy">
+        <catch-exception-strategy  doc:name="SQLSyntaxException-OnPost/Put" when="#[exception.causeMatches(&quot;com.mysql.jdbc.exceptions.MySQLIntegrityConstraintViolationException&quot;)]">
+            <logger message="#[exception]" level="INFO" doc:name="Logger"/>
+            <set-payload doc:name="Set Payload" value="#[&quot;Error with SQL Syntax. Please see the following for a detailed error message: \n&quot; + exception]"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="DataTypeWeaveException-OnPost/Put" when="#[exception.causeMatches(&quot;com.mulesoft.weave.mule.exception.WeaveExecutionException&quot;)]">
+            <logger message="#[exception]" level="INFO" doc:name="Logger"/>
+            <set-payload value="#[&quot;Error sending data due to data entry with the wrong type and so cannot tranform the message. Please see the following for a detailed error message: \n&quot; + exception]" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy when="#[exception.causeMatches(&quot;org.mule.module.apikit.exception.InvalidQueryParameterException&quot;)]" doc:name="InvalidQueryParamException-OnDel">
+            <logger message="#[exception]" level="INFO" doc:name="Logger"/>
+            <set-payload value="#[&quot;Error on delete due to Invalid Query Parameter. Please see the following for a detailed error message: \n&quot; + exception]" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy when="#[exception.causeMatches(&quot;org.mule.module.apikit.exception.BadRequestException&quot;)]" doc:name="BadRequestException-OnPost/Put">
+            <logger message="#[exception]" level="INFO" doc:name="Logger"/>
+            <set-payload value="#[&quot;Error sending post. Please see the following for a detailed error message: \n&quot; + exception]" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="AllOtherExceptions">
+            <logger message="#[exception]" level="INFO" doc:name="Logger"/>
+            <set-payload value="#[&quot;Other unknown error. Please see the following for a detailed error message: \n&quot; + exception]" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+    </choice-exception-strategy>
+
+
+
+</mule>

@@ -6,40 +6,39 @@
 	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
 	xmlns="http://www.mulesoft.org/schema/mule/core" 
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.8.4"
-	xsi:schemaLocation="
-		http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
-		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
-    <munit:config name="munit"/>
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
+    <munit:config name="munit" doc:name="MUnit configuration"/>
     <spring:beans>
         <spring:import resource="classpath:qacinemas-sql.xml"/>
         <spring:import resource="classpath:globalexceptionstrategy.xml"/>
     </spring:beans>
     
     <munit:test name="QACinemas-test-suiteTest-delete:/userAccount/removeUser:application/json:api-config" description="MUnit Test">
-        <set-payload value="#[{userId: 3, username: 'epicsleepy', password: '111', name: 'adam', age: 25, occupation: 'consultant'}]" doc:name="Set Payload"/>
+        <munit:set payload="#[]" doc:name="Set Message"/>
         <flow-ref name="delete:/userAccount/removeUser:application/json:api-config" doc:name="delete:/userAccount/removeUser:application/json:api-config"/>
         <munit:assert-on-equals message="failed to delete" expectedValue="{&quot;message&quot;:&quot;sucesfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
     </munit:test>
     <munit:test name="QACinemas-test-suiteTest-delete:/QAcinemasOverview/removeUser:api-config" description="MUnit Test">
-        <set-payload value="#[{userId: 3, username: 'epicsleepy', password: '111', name: 'adam', age: 25, occupation: 'consultant'}]" doc:name="Set Payload"/>
+        <munit:set payload="#[]" doc:name="Set Message"/>
         <flow-ref name="delete:/QAcinemasOverview/removeUser:api-config" doc:name="delete:/QAcinemasOverview/removeUser:api-config"/>
         <munit:assert-on-equals message="failed to delete" expectedValue="{&quot;message&quot;:&quot;sucesfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
     </munit:test>
     <munit:test name="QACinemas-test-suiteTest-delete:/QAcinemasOverview/removeFilm:application/json:api-config" description="MUnit Test">
-        <set-payload value="#[{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}]" doc:name="Set Payload"/>
+        <munit:set payload="#[]" doc:name="Set Message"/>
         <flow-ref name="delete:/QAcinemasOverview/removeFilm:application/json:api-config" doc:name="delete:/QAcinemasOverview/removeFilm:application/json:api-config"/>
         <munit:assert-on-equals message="failed to delete" expectedValue="{&quot;message&quot;:&quot;sucesfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
     </munit:test>
     <munit:test name="QACinemas-test-suiteTest-delete:/QAcinemasOverview/removeFilm:api-config" description="MUnit Test">
-        <set-payload value="#[{movieId: 3, movieTitle: 'spiderman', yearReleased: '2017', avgRating: 2.0, duration: '86minutes', genre: 'action'}]" doc:name="Set Payload"/>
+        <munit:set payload="#[]" doc:name="Set Message"/>
         <flow-ref name="delete:/QAcinemasOverview/removeFilm:api-config" doc:name="delete:/QAcinemasOverview/removeFilm:api-config"/>
         <munit:assert-on-equals message="failed to delete" expectedValue="{&quot;message&quot;:&quot;sucesfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
     </munit:test>
     <munit:test name="QACinemas-test-suiteTest-delete:/booking/deleteBooking:application/json:api-config" description="MUnit Test">
-        <set-payload value="#[{bookingId: 1, userId: 1, movieId:1, movieTitle: 'wonder woman', noOfSeats: 2, screen: 1, timeBooked: '14:00', date: '21-06-2017'}]" doc:name="Set Payload"/>
+        <munit:set payload="#[]" doc:name="Set Message"/>
         <flow-ref name="delete:/booking/deleteBooking:application/json:api-config" doc:name="delete:/booking/deleteBooking:application/json:api-config"/>
         <munit:assert-on-equals message="failed to delete" expectedValue="{&quot;message&quot;:&quot;sucesfully removed&quot;}" actualValue="#[payload]" doc:name="Assert Equals"/>
     </munit:test>
